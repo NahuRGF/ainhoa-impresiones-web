@@ -1,0 +1,104 @@
+/* ==========================================================================
+   ANIMATIONS · Ports vanilla de react-bits (DavidHDev/react-bits)
+   ShinyText, SpotlightCard, Magnet, TiltedCard, TextLoop (onda SVG)
+   ========================================================================== */
+
+/* ---------- ShinyText (brillo metálico) ---------- */
+
+.rb-shiny {
+  display: inline-block;
+  --shiny-color: #1a1a1a;
+  --shiny-shine: #ffffff;
+  --shiny-spread: 120deg;
+  --shiny-duration: 3.4s;
+  background-image: linear-gradient(var(--shiny-spread),
+    var(--shiny-color) 0%, var(--shiny-color) 40%,
+    var(--shiny-shine) 50%,
+    var(--shiny-color) 60%, var(--shiny-color) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rb-shine var(--shiny-duration) linear infinite;
+}
+
+.rb-shiny--light { --shiny-color: #ffffff; --shiny-shine: #e8ebef; --shiny-spread: 100deg; }
+.rb-shiny--purple { --shiny-color: #3b2d6e; --shiny-shine: #e6007e; --shiny-spread: 120deg; }
+.rb-shiny--pink { --shiny-color: #ffb3d9; --shiny-shine: #ffffff; --shiny-spread: 100deg; --shiny-duration: 3.8s; }
+
+@keyframes rb-shine {
+  0% { background-position: 150% center; }
+  68% { background-position: -50% center; }
+  100% { background-position: -50% center; }
+}
+
+/* ---------- SpotlightCard (luz que sigue el cursor) ---------- */
+
+.rb-spot-host { position: relative; }
+
+.rb-spot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  background: radial-gradient(420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    var(--spotlight-color, rgba(255, 255, 255, 0.4)), transparent 72%);
+}
+
+.rb-spot-host:hover .rb-spot,
+.rb-spot-host:focus-within .rb-spot { opacity: 1; }
+
+/* ---------- Magnet (botones que se atraen al cursor) ---------- */
+
+.magnet { will-change: transform; }
+
+/* ---------- TiltedCard (inclinación 3D) ---------- */
+
+.rb-tilt { will-change: transform; }
+
+/* ---------- TextLoop (cinta con texto sobre onda SVG) ---------- */
+
+.rb-textloop {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.rb-textloop-svg { display: block; width: 100%; height: auto; }
+
+.rb-textloop .rb-tl-text,
+.rb-textloop .rb-tl-measure {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.rb-textloop .rb-tl-measure { fill: transparent; }
+
+.rb-band-cat { padding: 0.2rem 1rem 0; }
+.rb-band-cat .rb-tl-text { fill: var(--steel-400, #98a0aa); }
+.rb-band-cat .rb-tl-path { stroke: rgba(26, 26, 26, 0.1); stroke-width: 62; }
+
+.rb-band-joyas { margin-top: 2.2rem; }
+.rb-band-joyas .rb-tl-text,
+.rb-band-joyas .rb-tl-measure {
+  font-family: var(--font-marker), cursive;
+  font-size: 30px;
+  letter-spacing: 2px;
+  text-transform: none;
+}
+.rb-band-joyas .rb-tl-text { fill: var(--fuchsia, #e6007e); }
+.rb-band-joyas .rb-tl-path { stroke: rgba(230, 0, 126, 0.14); stroke-width: 62; }
+
+/* ---------- Reducir movimiento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-shiny { animation: none; }
+}
