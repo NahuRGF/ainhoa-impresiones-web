@@ -165,6 +165,26 @@ body {
   color: var(--ink-2);
 }
 
+.hero-icon-wrap {
+  width: clamp(110px, 22vw, 150px);
+  height: clamp(110px, 22vw, 150px);
+  margin: 0 auto 1.6rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(26, 26, 26, 0.12);
+  box-shadow: 0 14px 34px rgba(26, 26, 26, 0.18), inset 0 0 0 6px rgba(255, 255, 255, 0.5);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.hero-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .hero h1 {
   margin: 0;
   font-family: var(--font-display);
@@ -666,6 +686,16 @@ body {
   margin: 0;
   font-size: 0.75rem;
   color: var(--steel-400);
+}
+
+.footer-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: -4px;
+  margin-right: 0.35rem;
+  border: 1px solid rgba(26, 26, 26, 0.15);
 }
 
 .copyright a {
