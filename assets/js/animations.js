@@ -24,10 +24,14 @@
         unitW = measure.getComputedTextLength();
       } catch (e) { return; }
       if (!length || !unitW) return;
-      var reps = Math.ceil(length / unitW) + 2;
+      var reps = Math.max(1, Math.round(length / unitW));
       var unit = measure.textContent;
       head.textContent = unit.repeat(reps);
       tail.textContent = unit.repeat(reps);
+      head.setAttribute('textLength', length.toFixed(2));
+      tail.setAttribute('textLength', length.toFixed(2));
+      head.setAttribute('lengthAdjust', 'spacing');
+      tail.setAttribute('lengthAdjust', 'spacing');
     }
 
     measureLoop();
@@ -163,7 +167,7 @@
 
   var spots = document.querySelectorAll('.product-card, .category-card, .memo-pad, .joya-card, .horarios-card');
   var spotColors = {
-    'product-card': 'rgba(185, 192, 200, 0.6)',
+    'product-card': 'rgba(185, 192, 200, 0.35)',
     'category-card': 'rgba(230, 0, 126, 0.18)',
     'memo-pad': 'rgba(230, 0, 126, 0.16)',
     'joya-card': 'rgba(232, 181, 77, 0.3)',
