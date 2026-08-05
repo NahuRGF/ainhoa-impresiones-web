@@ -1,10 +1,20 @@
 /* Ports vanilla JS de react-bits (DavidHDev/react-bits):
-   TextLoop, Magnet, TiltedCard y SpotlightCard, sin dependencias. */
+   TextLoop, Magnet, TiltedCard y SpotlightCard, sin dependencias.
+   Expone window.RBAnims(root) para re-inicializar nodos renderizados
+   dinámicamente (ej: tarjetas del catálogo). Es idempotente. */
 (function () {
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  function mark(el, key) {
+    var attr = 'data-rb-' + key;
+    if (el.getAttribute(attr)) return true;
+    el.setAttribute(attr, '1');
+    return false;
+  }
+
   /* ---------- TextLoop: texto que fluye sobre un path SVG ---------- */
   function initTextLoop(root) {
+    if (mark(root, 'loop')) return;
     var path = root.querySelector('.rb-tl-path');
     var head = root.querySelector('.rb-tl-head');
     var tail = root.querySelector('.rb-tl-tail');
@@ -66,6 +76,7 @@
 
   /* ---------- Magnet: el elemento se desplaza hacia el cursor ---------- */
   function initMagnet(el, opts) {
+    if (mark(el, 'magnet')) return;
     opts = opts || {};
     var strength = opts.strength || 2;
     var padding = opts.padding || 60;
@@ -92,6 +103,7 @@
 
   /* ---------- TiltedCard: inclinación 3D con suavizado ---------- */
   function initTilt(el, opts) {
+    if (mark(el, 'tilt')) return;
     opts = opts || {};
     var amplitude = opts.amplitude || 14;
     var scale = opts.scale || 1.05;
@@ -150,22 +162,6 @@
     });
   }
 
-  if (reduce) return;
-
-  var bands = document.querySelectorAll('.rb-textloop');
-  for (var i = 0; i < bands.length; i++) initTextLoop(bands[i]);
-
-  var magnets = document.querySelectorAll('.magnet');
-  for (var j = 0; j < magnets.length; j++) initMagnet(magnets[j]);
-
-  var tilts = document.querySelectorAll('.product-art, .hero-icon, .hero-logo, .joya-ring svg');
-  for (var k = 0; k < tilts.length; k++) {
-    var t = tilts[k];
-    var isArt = t.classList.contains('product-art');
-    initTilt(t, { amplitude: isArt ? 16 : 12, scale: isArt ? 1.07 : 1.05 });
-  }
-
-  var spots = document.querySelectorAll('.product-card, .category-card, .memo-pad, .joya-card, .horarios-card');
   var spotColors = {
     'product-card': 'rgba(185, 192, 200, 0.35)',
     'category-card': 'rgba(230, 0, 126, 0.18)',
@@ -173,12 +169,35 @@
     'joya-card': 'rgba(232, 181, 77, 0.3)',
     'horarios-card': 'rgba(230, 0, 126, 0.18)'
   };
-  for (var m = 0; m < spots.length; m++) {
-    var s = spots[m];
-    var color = 'rgba(255, 255, 255, 0.4)';
+
+  function spotColorFor(el) {
     for (var c in spotColors) {
-      if (s.classList.contains(c)) { color = spotColors[c]; break; }
+      if (el.classList.contains(c)) return spotColors[c];
     }
-    initSpotlight(s, color);
+    return 'rgba(255, 255, 255, 0.4)';
   }
+
+  /* ---------- Init general (idempotente, acepta un sub-árbol) ---------- */
+  window.RBAnims = function (root) {
+    if (reduce) return;
+    root = root || document;
+
+    var bands = root.querySelectorAll('.rb-textloop');
+    for (var i = 0; i < bands.length; i++) initTextLoop(bands[i]);
+
+    var magnets = root.querySelectorAll('.magnet');
+    for (var j = 0; j < magnets.length; j++) initMagnet(magnets[j]);
+
+    var tilts = root.querySelectorAll('.product-art, .hero-icon, .hero-logo, .joya-ring svg');
+    for (var k = 0; k < tilts.length; k++) {
+      var t = tilts[k];
+      var isArt = t.classList.contains('product-art');
+      initTilt(t, { amplitude: isArt ? 16 : 12, scale: isArt ? 1.07 : 1.05 });
+    }
+
+    var spots = root.querySelectorAll('.product-card, .category-card, .memo-pad, .joya-card, .horarios-card');
+    for (var m = 0; m < spots.length; m++) initSpotlight(spots[m], spotColorFor(spots[m]));
+  };
+
+  window.RBAnims();
 })();

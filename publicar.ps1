@@ -1,0 +1,1 @@
+git add -A; if (git diff --cached --quiet) { Write-Host "Sin cambios para publicar." } else { git -c user.name="NahuRGF" -c user.email="nahu@users.noreply.github.com" commit -m "Actualizo stock"; git push }

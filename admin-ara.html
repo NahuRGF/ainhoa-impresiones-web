@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Administración · JOYAS ARA</title>
+  <link rel="icon" type="image/jpeg" href="assets/img/joyas-icono.jpg">
+  <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+
+  <div id="pinScreen" class="pin-screen">
+    <div class="pin-card">
+      <img class="pin-logo" src="assets/img/joyas-icono.jpg" alt="JOYAS ARA" width="48" height="48">
+      <h1>Acceso restringido</h1>
+      <p>Ingresá el PIN de administración</p>
+      <input id="pinInput" class="pin-input" type="password" inputmode="numeric" placeholder="••••" autocomplete="off">
+      <button id="pinBtn" class="btn btn-primary" type="button">Entrar</button>
+      <p id="pinError" class="pin-error" hidden>PIN incorrecto</p>
+    </div>
+  </div>
+
+  <div id="panel" class="panel" hidden>
+    <header class="panel-head">
+      <div class="head-brand">
+        <img src="assets/img/joyas-icono.jpg" alt="" width="28" height="28">
+        <div>
+          <strong>Administración JOYAS ARA</strong>
+          <span id="productCount" class="muted">Cargando…</span>
+        </div>
+      </div>
+      <div class="head-actions">
+        <button id="copyBtn" class="btn" type="button">Copiar JSON</button>
+        <button id="downloadBtn" class="btn btn-primary" type="button">Descargar productos.json</button>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Salir</button>
+      </div>
+    </header>
+
+    <main class="panel-body">
+
+      <section class="card">
+        <h2 id="formTitle">Nuevo producto</h2>
+        <form id="productForm" class="product-form">
+          <input type="hidden" id="editIndex" value="-1">
+          <div class="field">
+            <label for="fNombre">Nombre</label>
+            <input id="fNombre" type="text" required maxlength="60" placeholder="Ej: Aro con brillantes">
+          </div>
+          <div class="field">
+            <label for="fCategoria">Categoría</label>
+            <select id="fCategoria">
+              <option value="anillos">Anillos</option>
+              <option value="cadenas">Cadenas</option>
+              <option value="pulseras">Pulseras</option>
+              <option value="aros">Aros</option>
+              <option value="sets">Sets</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fPrecio">Precio</label>
+            <input id="fPrecio" type="text" required maxlength="20" placeholder="Ej: 3.500">
+          </div>
+          <div class="field">
+            <label for="fImagen">Imagen (opcional)</label>
+            <input id="fImagen" type="text" placeholder="URL o nombre de archivo en assets/img/">
+            <small class="hint">Si queda vacío se muestra el ícono de la categoría. Podés subir el archivo a la carpeta <code>assets/img/</code> y escribir su nombre (ej: <code>aro-brillantes.jpg</code>) o pegar una URL.</small>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="saveBtn">Agregar producto</button>
+            <button type="button" class="btn btn-ghost" id="cancelEditBtn" hidden>Cancelar edición</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Productos (<span id="listCount">0</span>)</h2>
+        <div id="productList" class="product-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>Publicar cambios</h2>
+        <ol class="steps">
+          <li>Descargá <code>productos.json</code> (botón arriba) y reemplazá <code>assets/data/productos.json</code> del proyecto.</li>
+          <li>Si agregaste fotos, copiá los archivos dentro de <code>assets/img/</code>.</li>
+          <li>En la carpeta del proyecto ejecutá el script <code>publicar.ps1</code> (1 línea: commit + push).</li>
+          <li>Esperá ~45 segundos y verificá <a href="catalogo.html" target="_blank" rel="noopener">el catálogo en vivo</a>.</li>
+        </ol>
+        <p class="muted">Recordá: los cambios se ven online recién después de publicar con <code>publicar.ps1</code>.</p>
+      </section>
+
+      <pre id="jsonPreview" class="json-preview" aria-label="Contenido de productos.json"></pre>
+
+    </main>
+  </div>
+
+  <script src="assets/js/productos-default.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>
