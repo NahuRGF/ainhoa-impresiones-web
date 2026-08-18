@@ -213,3 +213,26 @@ body {
 }
 
 .btn-danger:hover { background: #3a1c1c; }
+
+.field-full { grid-column: 1 / -1; }
+
+.photo-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+
+.photo-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #101318;
+  border: 1px solid #262b33;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.photo-preview img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #2c313a;
+}

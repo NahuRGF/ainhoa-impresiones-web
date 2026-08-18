@@ -62,10 +62,20 @@
             <label for="fPrecio">Precio</label>
             <input id="fPrecio" type="text" required maxlength="20" placeholder="Ej: 3.500">
           </div>
-          <div class="field">
-            <label for="fImagen">Imagen (opcional)</label>
-            <input id="fImagen" type="text" placeholder="URL o nombre de archivo en assets/img/">
-            <small class="hint">Si queda vacío se muestra el ícono de la categoría. Podés subir el archivo a la carpeta <code>assets/img/</code> y escribir su nombre (ej: <code>aro-brillantes.jpg</code>) o pegar una URL.</small>
+          <div class="field field-full">
+            <label>Imagen (opcional)</label>
+            <div class="photo-actions">
+              <button type="button" class="btn btn-sm" id="takePhotoBtn">Sacar foto</button>
+              <button type="button" class="btn btn-sm" id="pickPhotoBtn">Elegir de galeria</button>
+              <input id="photoCamera" type="file" accept="image/*" capture="environment" hidden>
+              <input id="photoGallery" type="file" accept="image/*" hidden>
+            </div>
+            <div id="photoPreview" class="photo-preview" hidden>
+              <img id="photoPreviewImg" src="" alt="Preview">
+              <button type="button" class="btn btn-sm btn-danger" id="removePhotoBtn">Quitar foto</button>
+            </div>
+            <input id="fImagen" type="text" placeholder="URL de imagen (se completa sola al subir)">
+            <small class="hint">Tomá una foto con la camara o elegí de la galeria. Tambien podes pegar una URL manualmente.</small>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" id="saveBtn">Agregar producto</button>
@@ -80,11 +90,10 @@
       </section>
 
       <section class="card">
-        <h2>Cómo funciona</h2>
+        <h2>Como funciona</h2>
         <ul class="steps">
-          <li>Los cambios se guardan <strong>directo en la base de datos</strong> y se ven al instante en <a href="catalogo.html" target="_blank" rel="noopener">el catálogo</a>.</li>
-          <li>Si agregás fotos, subilas a la carpeta <code>assets/img/</code> del repo y escribí el nombre del archivo en el campo de imagen.</li>
-          <li>Para subir imágenes nuevas al repo, ejecutá <code>publicar.ps1</code> o hacé un commit manual.</li>
+          <li>Los cambios se guardan <strong>directo en la base de datos</strong> y se ven al instante en <a href="catalogo.html" target="_blank" rel="noopener">el catalogo</a>.</li>
+          <li>Las fotos se suben a Supabase Storage automaticamente. Tambien podes pegar una URL.</li>
         </ul>
       </section>
 

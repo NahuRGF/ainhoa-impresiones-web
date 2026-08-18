@@ -164,6 +164,7 @@
     $('formTitle').textContent = 'Nuevo producto';
     $('saveBtn').textContent = 'Agregar producto';
     $('cancelEditBtn').hidden = true;
+    clearPhotoPreview();
   }
 
   function startEdit(i) {
@@ -172,10 +173,14 @@
     $('fNombre').value = p.nombre || '';
     $('fCategoria').value = p.categoria || 'anillos';
     $('fPrecio').value = p.precio || '';
-    $('fImagen').value = p.imagen ? p.imagen.replace(/^assets\/img\//, '') : '';
+    $('fImagen').value = p.imagen || '';
     $('formTitle').textContent = 'Editar: ' + (p.nombre || '');
     $('saveBtn').textContent = 'Guardar cambios';
     $('cancelEditBtn').hidden = false;
+    clearPhotoPreview();
+    if (p.imagen) {
+      showPhotoPreview(p.imagen);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -184,7 +189,10 @@
     if (saving) return;
     saving = true;
     setStatus('Guardando…');
-    dbInsert(p).then(function (row) {
+    uploadPhoto(p.nombre).then(function (url) {
+      if (url) p.imagen = url;
+      return dbInsert(p);
+    }).then(function (row) {
       products.push(row);
       renderList();
       resetForm();
@@ -200,12 +208,15 @@
     if (saving) return;
     saving = true;
     setStatus('Guardando…');
-    var id = products[i].id;
-    dbUpdate(id, p).then(function () {
+    uploadPhoto(p.nombre).then(function (url) {
+      if (url) p.imagen = url;
+      var id = products[i].id;
+      return dbUpdate(id, p);
+    }).then(function () {
       products[i].nombre = p.nombre;
       products[i].categoria = p.categoria;
       products[i].precio = p.precio;
-      products[i].imagen = p.imagen;
+      if (p.imagen) products[i].imagen = p.imagen;
       renderList();
       resetForm();
       setStatus('Cambios guardados', 'ok');
@@ -284,8 +295,81 @@
     });
   }
 
+  /* ---------- Photo upload ---------- */
+  var pendingPhotoFile = null;
+  var pendingPhotoURL = null;
+
+  function compressImage(file, maxW, quality) {
+    return new Promise(function (resolve) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var w = img.width;
+          var h = img.height;
+          if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+          var c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          c.toBlob(function (blob) { resolve(blob || file); }, 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showPhotoPreview(url) {
+    $('photoPreviewImg').src = url;
+    $('photoPreview').hidden = false;
+  }
+
+  function clearPhotoPreview() {
+    $('photoPreview').hidden = true;
+    $('photoPreviewImg').src = '';
+    $('fImagen').value = '';
+    pendingPhotoFile = null;
+    pendingPhotoURL = null;
+  }
+
+  function handlePhotoFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    setStatus('Procesando foto…');
+    compressImage(file, 1200, 0.8).then(function (blob) {
+      pendingPhotoFile = blob;
+      pendingPhotoURL = URL.createObjectURL(blob);
+      showPhotoPreview(pendingPhotoURL);
+      $('fImagen').value = '(se sube al guardar)';
+      setStatus('Foto lista. Guarda el producto para subirla.', 'ok');
+    });
+  }
+
+  function uploadPhoto(productName) {
+    if (!pendingPhotoFile) return Promise.resolve(null);
+    var db = getClient();
+    if (!db) return Promise.resolve(null);
+    var slug = (productName || 'foto').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    var ts = Date.now();
+    var path = slug + '-' + ts + '.jpg';
+    return db.storage.from('productos').upload(path, pendingPhotoFile, { contentType: 'image/jpeg' }).then(function (res) {
+      if (res.error) throw res.error;
+      var publicURL = db.storage.from('productos').getPublicUrl(path).data.publicUrl;
+      clearPhotoPreview();
+      return publicURL;
+    });
+  }
+
+  function bindPhotoButtons() {
+    $('takePhotoBtn').addEventListener('click', function () { $('photoCamera').click(); });
+    $('pickPhotoBtn').addEventListener('click', function () { $('photoGallery').click(); });
+    $('photoCamera').addEventListener('change', function (e) { if (e.target.files[0]) handlePhotoFile(e.target.files[0]); e.target.value = ''; });
+    $('photoGallery').addEventListener('change', function (e) { if (e.target.files[0]) handlePhotoFile(e.target.files[0]); e.target.value = ''; });
+    $('removePhotoBtn').addEventListener('click', clearPhotoPreview);
+  }
+
   /* ---------- Event binding ---------- */
   function bind() {
+    bindPhotoButtons();
     $('pinBtn').addEventListener('click', tryLogin);
     $('pinInput').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') tryLogin();
