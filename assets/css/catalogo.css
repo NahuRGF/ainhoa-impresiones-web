@@ -216,7 +216,7 @@ body {
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
   justify-content: center;
 }
 
@@ -563,7 +563,7 @@ body {
 .contact-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
   justify-content: center;
   margin-top: 2.2rem;
 }
