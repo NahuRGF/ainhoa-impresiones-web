@@ -1,7 +1,7 @@
 /* Panel de administración de JOYAS ARA (oculto, sin enlaces públicos).
    Lee y escribe directo a Supabase; los cambios se ven al instante. */
 (function () {
-  var PIN = 'ARA2024';
+  var PIN = '1234';
   var SESSION_KEY = 'ara_admin_ok';
 
   var products = [];
@@ -340,13 +340,15 @@
   /* ---------- Login ---------- */
   function tryLogin() {
     var v = $('pinInput').value.trim();
+    console.log('PIN attempt:', v, 'expected:', PIN, 'match:', v === PIN);
     if (v === PIN) {
       unlock();
-      $('pinScreen').hidden = true;
-      $('panel').hidden = false;
+      $('pinScreen').style.display = 'none';
+      $('panel').style.display = 'block';
       $('pinError').hidden = true;
       $('pinInput').value = '';
     } else {
+      $('pinError').textContent = 'PIN incorrecto';
       $('pinError').hidden = false;
     }
   }
@@ -355,8 +357,8 @@
   function init() {
     bind();
     if (isUnlocked()) {
-      $('pinScreen').hidden = true;
-      $('panel').hidden = false;
+      $('pinScreen').style.display = 'none';
+      $('panel').style.display = 'block';
     }
     connectDB(0);
   }
