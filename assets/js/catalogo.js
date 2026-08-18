@@ -149,9 +149,16 @@
     return Promise.resolve(JSON.parse(JSON.stringify(d)));
   }
 
-  loadFromSupabase()
-    .catch(loadFromJSON)
-    .catch(loadDefault)
-    .then(function (list) { render(list); })
-    .catch(function () { render([]); });
+  function tryLoad(attempt) {
+    return loadFromSupabase().catch(function (e) {
+      if (attempt < 10 && e === 'sdk not loaded') {
+        return new Promise(function (resolve) {
+          setTimeout(function () { resolve(tryLoad(attempt + 1)); }, 300);
+        });
+      }
+      return loadFromJSON().catch(loadDefault);
+    });
+  }
+
+  tryLoad(0).then(function (list) { render(list); }).catch(function () { render([]); });
 })();

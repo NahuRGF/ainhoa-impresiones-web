@@ -358,8 +358,16 @@
       $('pinScreen').hidden = true;
       $('panel').hidden = false;
     }
+    connectDB(0);
+  }
+
+  function connectDB(attempt) {
     var db = getClient();
     if (!db) {
+      if (attempt < 10) {
+        setTimeout(function () { connectDB(attempt + 1); }, 300);
+        return;
+      }
       $('productCount').textContent = 'Supabase no configurado';
       setStatus('Editá assets/js/supabase-config.js con tu URL y key de Supabase', 'error');
       renderList();
