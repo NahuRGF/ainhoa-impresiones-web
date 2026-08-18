@@ -27,7 +27,7 @@
 
   function waLink(nombre) {
     return 'https://wa.me/' + WA + '?text=' +
-      encodeURIComponent('¡Hola! Me interesa el producto "' + nombre + '" del catálogo.');
+      encodeURIComponent('¡Hola! Quería saber si "' + nombre + '" está disponible.');
   }
 
   function makeCard(p, idx) {
