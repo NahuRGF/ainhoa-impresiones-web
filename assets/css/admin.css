@@ -186,3 +186,30 @@ body {
   color: #b8c2cc;
   margin: 0;
 }
+
+.status-bar {
+  font-size: 13px;
+  padding: 0;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s, padding 0.2s;
+  color: #9aa3ad;
+}
+
+.status-bar.status-ok { color: #6ecf8e; }
+.status-bar.status-error { color: #ff7a7a; }
+
+.status-bar:not(:empty) {
+  padding: 6px 0 10px;
+  height: auto;
+}
+
+.btn-sm { padding: 5px 8px !important; font-size: 12px !important; }
+
+.btn-danger {
+  background: transparent;
+  border-color: #5a3030;
+  color: #ff7a7a;
+}
+
+.btn-danger:hover { background: #3a1c1c; }

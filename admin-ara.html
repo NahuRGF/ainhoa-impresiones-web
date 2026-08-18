@@ -31,11 +31,12 @@
         </div>
       </div>
       <div class="head-actions">
-        <button id="copyBtn" class="btn" type="button">Copiar JSON</button>
-        <button id="downloadBtn" class="btn btn-primary" type="button">Descargar productos.json</button>
+        <button id="refreshBtn" class="btn" type="button">Recargar</button>
         <button id="logoutBtn" class="btn btn-ghost" type="button">Salir</button>
       </div>
     </header>
+
+    <div id="statusBar" class="status-bar"></div>
 
     <main class="panel-body">
 
@@ -79,14 +80,12 @@
       </section>
 
       <section class="card">
-        <h2>Publicar cambios</h2>
-        <ol class="steps">
-          <li>Descargá <code>productos.json</code> (botón arriba) y reemplazá <code>assets/data/productos.json</code> del proyecto.</li>
-          <li>Si agregaste fotos, copiá los archivos dentro de <code>assets/img/</code>.</li>
-          <li>En la carpeta del proyecto ejecutá el script <code>publicar.ps1</code> (1 línea: commit + push).</li>
-          <li>Esperá ~45 segundos y verificá <a href="catalogo.html" target="_blank" rel="noopener">el catálogo en vivo</a>.</li>
-        </ol>
-        <p class="muted">Recordá: los cambios se ven online recién después de publicar con <code>publicar.ps1</code>.</p>
+        <h2>Cómo funciona</h2>
+        <ul class="steps">
+          <li>Los cambios se guardan <strong>directo en la base de datos</strong> y se ven al instante en <a href="catalogo.html" target="_blank" rel="noopener">el catálogo</a>.</li>
+          <li>Si agregás fotos, subilas a la carpeta <code>assets/img/</code> del repo y escribí el nombre del archivo en el campo de imagen.</li>
+          <li>Para subir imágenes nuevas al repo, ejecutá <code>publicar.ps1</code> o hacé un commit manual.</li>
+        </ul>
       </section>
 
       <pre id="jsonPreview" class="json-preview" aria-label="Contenido de productos.json"></pre>
@@ -94,7 +93,8 @@
     </main>
   </div>
 
-  <script src="assets/js/productos-default.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/supabase-config.js"></script>
   <script src="assets/js/admin.js"></script>
 </body>
 </html>

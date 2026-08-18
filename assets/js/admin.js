@@ -1,12 +1,12 @@
 /* Panel de administración de JOYAS ARA (oculto, sin enlaces públicos).
-   Trabaja sobre productos.json en memoria y lo exporta; la publicación
-   online la hace publicar.ps1 (git commit + push). */
+   Lee y escribe directo a Supabase; los cambios se ven al instante. */
 (function () {
   var PIN = 'ARA2024';
   var SESSION_KEY = 'ara_admin_ok';
 
   var products = [];
-  var lastFiltered = [];
+  var client = null;
+  var saving = false;
 
   var ICONOS = {
     anillos: '<svg viewBox="0 0 80 80" fill="none" stroke="#2B2B2B" stroke-width="4" stroke-linecap="round"><circle cx="40" cy="44" r="16"/><circle cx="40" cy="27" r="7" fill="#D3D8DE" stroke="none"/></svg>',
@@ -23,24 +23,30 @@
 
   function $(id) { return document.getElementById(id); }
 
-  /* ---------- Sesión ---------- */
+  /* ---------- Supabase client ---------- */
+  function getClient() {
+    if (client) return client;
+    if (!window.SUPABASE_URL || window.SUPABASE_URL.indexOf('TU_') === 0) return null;
+    if (!window.supabase || !window.supabase.createClient) return null;
+    client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    return client;
+  }
+
+  /* ---------- Session ---------- */
   function unlock() { sessionStorage.setItem(SESSION_KEY, '1'); }
   function isUnlocked() { return sessionStorage.getItem(SESSION_KEY) === '1'; }
   function lock() { sessionStorage.removeItem(SESSION_KEY); }
 
-  /* ---------- Datos ---------- */
-  function loadProducts() {
-    return fetch('assets/data/productos.json')
-      .then(function (r) {
-        if (!r.ok) throw new Error('no json');
-        return r.json();
-      })
-      .catch(function () {
-        var d = window.PRODUCTOS_DEFAULT || [];
-        return JSON.parse(JSON.stringify(d));
-      });
+  /* ---------- Status bar ---------- */
+  function setStatus(msg, type) {
+    var el = $('statusBar');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'status-bar' + (type ? ' status-' + type : '');
+    if (type === 'ok') setTimeout(function () { el.textContent = ''; el.className = 'status-bar'; }, 3000);
   }
 
+  /* ---------- Image normalization ---------- */
   function normalizeImage(v) {
     v = (v || '').trim();
     if (!v) return '';
@@ -49,24 +55,77 @@
     return 'assets/img/' + v;
   }
 
-  function serialize() {
-    return products.map(function (p) {
-      var o = { nombre: p.nombre, categoria: p.categoria, precio: p.precio };
-      if (p.imagen) o.imagen = p.imagen;
-      return o;
+  /* ---------- DB operations ---------- */
+  function dbLoad() {
+    var db = getClient();
+    if (!db) return Promise.reject('Supabase not configured');
+    return db.from('productos').select('*').order('orden').then(function (res) {
+      if (res.error) throw res.error;
+      return res.data || [];
     });
   }
 
-  function renderPreview() {
-    var text = JSON.stringify(serialize(), null, 2);
-    $('jsonPreview').textContent = text;
+  function dbInsert(p) {
+    var db = getClient();
+    if (!db) return Promise.reject('Supabase not configured');
+    var maxOrden = products.reduce(function (m, x) { return Math.max(m, x.orden || 0); }, 0);
+    var row = {
+      nombre: p.nombre,
+      categoria: p.categoria,
+      precio: p.precio,
+      imagen: p.imagen || '',
+      orden: maxOrden + 1
+    };
+    return db.from('productos').insert(row).select().then(function (res) {
+      if (res.error) throw res.error;
+      return res.data[0];
+    });
   }
 
+  function dbUpdate(id, p) {
+    var db = getClient();
+    if (!db) return Promise.reject('Supabase not configured');
+    return db.from('productos').update({
+      nombre: p.nombre,
+      categoria: p.categoria,
+      precio: p.precio,
+      imagen: p.imagen || ''
+    }).eq('id', id).then(function (res) {
+      if (res.error) throw res.error;
+    });
+  }
+
+  function dbDelete(id) {
+    var db = getClient();
+    if (!db) return Promise.reject('Supabase not configured');
+    return db.from('productos').delete().eq('id', id).then(function (res) {
+      if (res.error) throw res.error;
+    });
+  }
+
+  function dbReorder(id, newOrden) {
+    var db = getClient();
+    if (!db) return Promise.reject('Supabase not configured');
+    return db.from('productos').update({ orden: newOrden }).eq('id', id).then(function (res) {
+      if (res.error) throw res.error;
+    });
+  }
+
+  /* ---------- UI rendering ---------- */
   function thumb(p) {
     if (p.imagen) {
       return '<img class="product-thumb" src="' + p.imagen + '" alt="" loading="lazy">';
     }
     return '<span class="product-thumb product-thumb--icon">' + (ICONOS[p.categoria] || ICONOS.sets) + '</span>';
+  }
+
+  function renderPreview() {
+    var text = JSON.stringify(products.map(function (p) {
+      var o = { nombre: p.nombre, categoria: p.categoria, precio: p.precio };
+      if (p.imagen) o.imagen = p.imagen;
+      return o;
+    }), null, 2);
+    $('jsonPreview').textContent = text;
   }
 
   function renderList() {
@@ -75,17 +134,19 @@
     products.forEach(function (p, i) {
       var item = document.createElement('div');
       item.className = 'product-item';
+      var actions = '';
+      actions += '<button class="btn btn-sm" data-act="edit" data-i="' + i + '" type="button">Editar</button>';
+      actions += '<button class="btn btn-sm" data-act="dup" data-i="' + i + '" type="button">Duplicar</button>';
+      if (i > 0) actions += '<button class="btn btn-sm" data-act="up" data-i="' + i + '" type="button">↑</button>';
+      if (i < products.length - 1) actions += '<button class="btn btn-sm" data-act="down" data-i="' + i + '" type="button">↓</button>';
+      actions += '<button class="btn btn-sm btn-danger" data-act="del" data-i="' + i + '" type="button">✕</button>';
       item.innerHTML =
         thumb(p) +
         '<div class="product-info">' +
           '<strong></strong>' +
           '<span></span>' +
         '</div>' +
-        '<div class="product-actions">' +
-          '<button class="btn" data-act="edit" data-i="' + i + '" type="button">Editar</button>' +
-          '<button class="btn" data-act="dup" data-i="' + i + '" type="button">Duplicar</button>' +
-          '<button class="btn" data-act="del" data-i="' + i + '" type="button">Eliminar</button>' +
-        '</div>';
+        '<div class="product-actions">' + actions + '</div>';
       item.querySelector('.product-info strong').textContent = p.nombre;
       item.querySelector('.product-info span').textContent =
         (CAT_LABELS[p.categoria] || p.categoria) + ' · $' + (p.precio || '') +
@@ -93,7 +154,7 @@
       list.appendChild(item);
     });
     $('listCount').textContent = products.length;
-    $('productCount').textContent = products.length + ' producto(s) cargado(s)';
+    $('productCount').textContent = products.length + ' producto(s)';
     renderPreview();
   }
 
@@ -112,13 +173,118 @@
     $('fCategoria').value = p.categoria || 'anillos';
     $('fPrecio').value = p.precio || '';
     $('fImagen').value = p.imagen ? p.imagen.replace(/^assets\/img\//, '') : '';
-    $('formTitle').textContent = 'Editar producto';
+    $('formTitle').textContent = 'Editar: ' + (p.nombre || '');
     $('saveBtn').textContent = 'Guardar cambios';
     $('cancelEditBtn').hidden = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /* ---------- Eventos ---------- */
+  /* ---------- Actions ---------- */
+  function doAdd(p) {
+    if (saving) return;
+    saving = true;
+    setStatus('Guardando…');
+    dbInsert(p).then(function (row) {
+      products.push(row);
+      renderList();
+      resetForm();
+      setStatus('Producto agregado', 'ok');
+      saving = false;
+    }).catch(function (e) {
+      setStatus('Error: ' + (e.message || e), 'error');
+      saving = false;
+    });
+  }
+
+  function doUpdate(i, p) {
+    if (saving) return;
+    saving = true;
+    setStatus('Guardando…');
+    var id = products[i].id;
+    dbUpdate(id, p).then(function () {
+      products[i].nombre = p.nombre;
+      products[i].categoria = p.categoria;
+      products[i].precio = p.precio;
+      products[i].imagen = p.imagen;
+      renderList();
+      resetForm();
+      setStatus('Cambios guardados', 'ok');
+      saving = false;
+    }).catch(function (e) {
+      setStatus('Error: ' + (e.message || e), 'error');
+      saving = false;
+    });
+  }
+
+  function doDuplicate(i) {
+    if (saving) return;
+    saving = true;
+    setStatus('Duplicando…');
+    var orig = products[i];
+    var data = {
+      nombre: orig.nombre + ' (copia)',
+      categoria: orig.categoria,
+      precio: orig.precio,
+      imagen: orig.imagen || ''
+    };
+    dbInsert(data).then(function (row) {
+      products.push(row);
+      renderList();
+      setStatus('Producto duplicado', 'ok');
+      saving = false;
+    }).catch(function (e) {
+      setStatus('Error: ' + (e.message || e), 'error');
+      saving = false;
+    });
+  }
+
+  function doDelete(i) {
+    if (saving) return;
+    var nombre = products[i].nombre;
+    if (!confirm('¿Eliminar "' + nombre + '"?')) return;
+    saving = true;
+    setStatus('Eliminando…');
+    dbDelete(products[i].id).then(function () {
+      products.splice(i, 1);
+      renderList();
+      setStatus('Eliminado: ' + nombre, 'ok');
+      saving = false;
+    }).catch(function (e) {
+      setStatus('Error: ' + (e.message || e), 'error');
+      saving = false;
+    });
+  }
+
+  function doMove(i, dir) {
+    if (saving) return;
+    var j = i + dir;
+    if (j < 0 || j >= products.length) return;
+    saving = true;
+    setStatus('Reordenando…');
+    var tmpOrden = products[i].orden;
+    products[i].orden = products[j].orden;
+    products[j].orden = tmpOrden;
+    var idA = products[i].id;
+    var ordenA = products[i].orden;
+    var idB = products[j].id;
+    var ordenB = products[j].orden;
+    Promise.all([
+      dbReorder(idA, ordenA),
+      dbReorder(idB, ordenB)
+    ]).then(function () {
+      var tmp = products[i];
+      products[i] = products[j];
+      products[j] = tmp;
+      renderList();
+      setStatus('Reordenado', 'ok');
+      saving = false;
+    }).catch(function (e) {
+      setStatus('Error: ' + (e.message || e), 'error');
+      saving = false;
+    });
+  }
+
+  /* ---------- Event binding ---------- */
   function bind() {
     $('pinBtn').addEventListener('click', tryLogin);
     $('pinInput').addEventListener('keydown', function (e) {
@@ -128,6 +294,17 @@
     $('logoutBtn').addEventListener('click', function () {
       lock();
       location.reload();
+    });
+
+    $('refreshBtn').addEventListener('click', function () {
+      setStatus('Recargando…');
+      dbLoad().then(function (list) {
+        products = list;
+        renderList();
+        setStatus('Actualizado', 'ok');
+      }).catch(function (e) {
+        setStatus('Error: ' + (e.message || e), 'error');
+      });
     });
 
     $('productForm').addEventListener('submit', function (e) {
@@ -142,9 +319,7 @@
         precio: precio,
         imagen: normalizeImage($('fImagen').value)
       };
-      if (idx >= 0) products[idx] = data; else products.push(data);
-      resetForm();
-      renderList();
+      if (idx >= 0) doUpdate(idx, data); else doAdd(data);
     });
 
     $('cancelEditBtn').addEventListener('click', resetForm);
@@ -155,53 +330,14 @@
       var i = parseInt(btn.getAttribute('data-i'), 10);
       var act = btn.getAttribute('data-act');
       if (act === 'edit') startEdit(i);
-      else if (act === 'dup') {
-        var copy = JSON.parse(JSON.stringify(products[i]));
-        copy.nombre = copy.nombre + ' (copia)';
-        products.push(copy);
-        renderList();
-      } else if (act === 'del') {
-        if (confirm('¿Eliminar "' + products[i].nombre + '"?')) {
-          products.splice(i, 1);
-          renderList();
-        }
-      }
-    });
-
-    $('downloadBtn').addEventListener('click', function () {
-      var blob = new Blob([JSON.stringify(serialize(), null, 2)], { type: 'application/json' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'productos.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    });
-
-    $('copyBtn').addEventListener('click', function () {
-      var text = JSON.stringify(serialize(), null, 2);
-      function done() {
-        $('copyBtn').textContent = 'Copiado ✓';
-        setTimeout(function () { $('copyBtn').textContent = 'Copiar JSON'; }, 1500);
-      }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
-      } else { fallbackCopy(text); done(); }
+      else if (act === 'dup') doDuplicate(i);
+      else if (act === 'del') doDelete(i);
+      else if (act === 'up') doMove(i, -1);
+      else if (act === 'down') doMove(i, 1);
     });
   }
 
-  function fallbackCopy(text) {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(ta);
-  }
-
+  /* ---------- Login ---------- */
   function tryLogin() {
     var v = $('pinInput').value.trim();
     if (v === PIN) {
@@ -215,15 +351,28 @@
     }
   }
 
+  /* ---------- Init ---------- */
   function init() {
     bind();
     if (isUnlocked()) {
       $('pinScreen').hidden = true;
       $('panel').hidden = false;
     }
-    loadProducts().then(function (list) {
-      products = list.filter(function (p) { return p && p.nombre; });
+    var db = getClient();
+    if (!db) {
+      $('productCount').textContent = 'Supabase no configurado';
+      setStatus('Editá assets/js/supabase-config.js con tu URL y key de Supabase', 'error');
       renderList();
+      return;
+    }
+    setStatus('Conectando…');
+    dbLoad().then(function (list) {
+      products = list;
+      renderList();
+      setStatus('Conectado a Supabase', 'ok');
+    }).catch(function (e) {
+      $('productCount').textContent = 'Error de conexión';
+      setStatus('Error: ' + (e.message || e), 'error');
     });
   }
 

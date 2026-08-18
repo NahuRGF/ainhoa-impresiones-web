@@ -1,5 +1,5 @@
-/* Catálogo dinámico: lee assets/data/productos.json y arma la grilla.
-   Si no puede leer el JSON (sin servidor), usa los productos por defecto. */
+/* Catálogo dinámico: lee productos de Supabase, con fallback a
+   assets/data/productos.json y luego a productos por defecto. */
 (function () {
   var WA = '543755642288';
 
@@ -126,17 +126,32 @@
     if (window.RBAnims) window.RBAnims(grid);
   }
 
-  function loadProducts() {
+  function loadFromSupabase() {
+    if (!window.SUPABASE_URL || window.SUPABASE_URL.indexOf('TU_') === 0) return Promise.reject('not configured');
+    if (!window.supabase || !window.supabase.createClient) return Promise.reject('sdk not loaded');
+    var client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    return client.from('productos').select('*').order('orden').then(function (res) {
+      if (res.error) throw res.error;
+      return res.data || [];
+    });
+  }
+
+  function loadFromJSON() {
     return fetch('assets/data/productos.json')
       .then(function (r) {
         if (!r.ok) throw new Error('no json');
         return r.json();
-      })
-      .catch(function () {
-        var d = window.PRODUCTOS_DEFAULT || [];
-        return JSON.parse(JSON.stringify(d));
       });
   }
 
-  loadProducts().then(function (list) { render(list); }).catch(function () { render([]); });
+  function loadDefault() {
+    var d = window.PRODUCTOS_DEFAULT || [];
+    return Promise.resolve(JSON.parse(JSON.stringify(d)));
+  }
+
+  loadFromSupabase()
+    .catch(loadFromJSON)
+    .catch(loadDefault)
+    .then(function (list) { render(list); })
+    .catch(function () { render([]); });
 })();
